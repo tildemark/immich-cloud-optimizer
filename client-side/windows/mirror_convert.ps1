@@ -1,8 +1,7 @@
 # Configuration
-$SourceRoot = "D:\Photos"         # Your Master Archive
-$DestRoot   = "D:\WebP_Export"    # The new lightweight mirror
+$SourceRoot = "D:\Photos"
+$DestRoot = "D:\WebP_Export"
 
-# Gather all source images
 Write-Host "Scanning source directory..." -ForegroundColor Gray
 $images = Get-ChildItem -Path $SourceRoot -Recurse -Include *.jpg, *.jpeg, *.png
 $total = $images.Count
@@ -11,30 +10,25 @@ $count = 0
 ForEach ($img in $images) {
     $count++
     
-    # 1. Calculate Destination Paths
     $relativePath = $img.FullName.Substring($SourceRoot.Length)
     $destFile = Join-Path $DestRoot $relativePath
     $destFile = [IO.Path]::ChangeExtension($destFile, ".webp")
     $destFolder = [IO.Path]::GetDirectoryName($destFile)
 
-    # 2. Ensure Folder Exists
     if (-not (Test-Path $destFolder)) {
         New-Item -ItemType Directory -Path $destFolder -Force | Out-Null
     }
 
-    # 3. Determine if we need to convert
     $shouldConvert = $false
     $statusMsg = ""
     $statusColor = "White"
 
     if (-not (Test-Path $destFile)) {
-        # Case A: File doesn't exist
         $shouldConvert = $true
         $statusMsg = "Creating"
         $statusColor = "Cyan"
     }
     else {
-        # Case B: File exists, check timestamps
         $destInfo = Get-Item $destFile
         if ($img.LastWriteTime -gt $destInfo.LastWriteTime) {
             $shouldConvert = $true
@@ -43,11 +37,30 @@ ForEach ($img in $images) {
         }
     }
 
-    # 4. Execute Conversion
     if ($shouldConvert) {
         Write-Host "[$count / $total] $statusMsg : $($img.Name)" -ForegroundColor $statusColor
-        # Added -quiet so it doesn't spam the console
-        cwebp -q 80 "$($img.FullName)" -o "$destFile" -mt -quiet
+        
+        # 1. Try Standard Conversion
+        # We capture the output to null to hide standard errors, but we check the Exit Code
+        cwebp -q 80 "$($img.FullName)" -o "$destFile" -mt -quiet 2>$null
+        
+        # 2. Check for Failure (PARTITION0_OVERFLOW)
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "    [!] Standard conversion failed (likely Overflow). Retrying with Safe Mode..." -ForegroundColor Red
+            
+            # Retry with:
+            # -segments 1 (Reduces complexity of the partition map)
+            # -partition_limit 50 (Forces header bit reduction)
+            # -q 75 (Slightly lower quality to simplify the image)
+            cwebp -q 75 "$($img.FullName)" -o "$destFile" -mt -quiet -segments 1 -partition_limit 50
+            
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "    [X] FATAL: Could not convert $($img.Name). Skipping." -ForegroundColor Magenta
+            }
+            else {
+                Write-Host "    [V] Safe Mode success." -ForegroundColor Green
+            }
+        }
     }
 }
 
