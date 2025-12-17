@@ -1,0 +1,32 @@
+# Security: Never commit secrets!
+.env
+.env.local
+*.key
+*.pem
+
+# User Data: Prevent committing actual photos if folders are misplaced
+# (We assume users might copy photos into the repo folder by mistake)
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.heic
+*.mov
+*.mp4
+
+# Specific Output Folders (From our scripts)
+WebP_Export/
+Photos/
+library/
+postgres/
+
+# OS Generated Files (Common in photo folders)
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs and Temp
+*.log
+tmp/
+temp/
