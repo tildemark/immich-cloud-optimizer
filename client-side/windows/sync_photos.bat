@@ -14,11 +14,15 @@ echo ==================================================
 echo      STEP 2: UPLOADING CHANGES
 echo ==================================================
 :: Replace KEY with your actual API Key
-immich-go.exe upload from-folder "D:\WebP_Export" ^
+immich-go.exe ^
+  upload from-folder ^
+  "E:\WebP_Export" ^
   --server https://photos.sanchez.ph ^
-  --key YOUR_API_KEY_HERE ^
+  --concurrent-tasks 5 ^
+  --api-key YOUR_API_KEY_HERE ^
+  --folder-as-album=FOLDER ^
+  --on-errors=continue ^
   --recursive ^
-  --create-albums
 
 echo.
 echo ==================================================
