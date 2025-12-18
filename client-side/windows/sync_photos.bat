@@ -22,6 +22,7 @@ immich-go.exe ^
   --api-key YOUR_API_KEY_HERE ^
   --folder-as-album=FOLDER ^
   --on-errors=continue ^
+  --overwrite ^
   --recursive ^
 
 echo.
